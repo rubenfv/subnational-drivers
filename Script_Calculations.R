@@ -1,6 +1,4 @@
 #Spatial Filtering and Regressions by Ruben Ferrer 15.03.2019
-
-
 #------
 #1) Read the files - Define Inputs
 library(rgdal)
@@ -10,7 +8,7 @@ library(officer)
 library(magrittr)
 library(rgeos)
 library(RANN)
-
+#------
 ZMB_Micro <- readOGR(dsn = "./SHP", layer = "ZambiaMicro")
 ZMB_Meso <- readOGR(dsn = "./SHP", layer = "ZambiaMeso")
 ZMB_Macro <- readOGR(dsn = "./SHP", layer = "ZambiaMacro")
@@ -23,7 +21,7 @@ ECU_Macro <- readOGR(dsn = "./SHP", layer = "EcuMacro")
 ALL_Micro <- readOGR(dsn = "./SHP", layer = "ThreeMicro")
 ALL_Meso <- readOGR(dsn = "./SHP", layer = "ThreeMeso")
 ALL_Macro <- readOGR(dsn = "./SHP", layer = "ThreeMacro")
-
+#------
 #define data
 test <- PHL_Micro
 #define our regression equation so we don't have to type it each time
@@ -32,15 +30,13 @@ reg.eq1=LN_FC2~st_PVA+st_PPFA
 reg.eq1=LN_FC2~st_PPFA+st_CSI+st_ST+st_PVA
 reg.eq1=LN_FC2~st_ATOT+st_PPFA+st_PVA+st_RD
 reg.eq1=LN_FC2~st_PPFA+st_CSI
-
+#------
 #turn off scientific notation for reasonably-sized values
 options(scipen=7)
-
 #------
 #2) Create weight matrices https://cran.r-project.org/web/packages/spdep/vignettes/nb.pdf
 coords <- coordinates(test)
 IDs <- row.names(as(test, "data.frame"))
-
 test4_nb <- tri2nb(coords, row.names = IDs) #Delaunay triangulation
 if (require(rgeos, quietly = TRUE) && require(RANN, quietly = TRUE)) {
   test5_nb <- graph2nb(soi.graph(test4_nb, coords), row.names = IDs)
@@ -50,7 +46,6 @@ if (require(rgeos, quietly = TRUE) && require(RANN, quietly = TRUE)) {
 #We choose SOI as the best matrix model, thus:
 SOI.listw <- nb2listw(test5_nb) #convert nb to listw type
 listw <- SOI.listw
-
 #------
 # 3)Check Moran's I and choose Model
 #Let's run the Four simplest models: OLS, SLX, Lag Y, and Lag Error
@@ -70,9 +65,9 @@ reg6=lagsarlm(reg.eq1, data=test,listw, type="mixed")
 reg7=sacsarlm(reg.eq1,data=test, listw, type="sacmixed") 
 #SARAR a.k.a. Kelejian-Prucha, Cliff-Ord, or SAC If all T=0,y=pWy+XB+u, u=LWu+e
 reg8=sacsarlm(reg.eq1,data=test,listw, type="sac") 
-
+#------
 #GLOBAL MEASURES
-
+#------
 #OLS
 as.numeric(logLik(reg1)) #LogLik
 AIC(reg1) #AIC
@@ -83,7 +78,7 @@ summary(reg1)$sigma #SER
 summary(reg1)$r.squared #R2
 summary(reg1)$adj.r.squared #R2adj
 reg1$df.residual # df
-
+#------
 #SEM
 as.numeric(logLik(reg4)) #LogLik
 AIC(reg4) #AIC
@@ -94,7 +89,7 @@ sqrt(reg4$SSE/(length(reg4$residuals)-(reg4$parameters -1))) #SER
 1-var(reg4$residuals)/var(reg4$y) #R2
 1 -(sum(reg4$residual^2)/(length(reg4$residuals)-(reg4$parameters -1)))/var(reg4$y) #R2adj
 (length(reg4$residuals)-(reg4$parameters -1)) #df
-
+#------
 #SDEM
 as.numeric(logLik(reg5)) #LogLik
 AIC(reg5) #AIC
@@ -105,7 +100,7 @@ sqrt(reg5$SSE/(length(reg5$residuals)-(reg5$parameters -1))) #SER
 1-var(reg5$residuals)/var(reg5$y) #R2
 1 -(sum(reg5$residual^2)/(length(reg5$residuals)-(reg5$parameters -1)))/var(reg5$y) #R2adj
 (length(reg5$residuals)-(reg5$parameters -1)) #df
-
+#------
 #SLX
 as.numeric(logLik(reg2)) #LogLik
 AIC(reg2) #AIC
@@ -116,20 +111,15 @@ sqrt((summary(reg2)$sigma)^2) #SER
 summary(reg2)$r.squared #R2
 summary(reg2)$adj.r.squared #R2adj
 reg2$df.residual #df
-
-
+#------
 summary(reg6)
 summary(impacts(reg6,listw=listw, R=500),zstats=TRUE)
 bptest.sarlm(reg6)
 (1-(reg6$SSE/(var(test$LN_FC2)*(length(test$LN_FC2)-1))))
 Hausman.test(reg6)
 lm.morantest(reg6,listw)
-
 #---------------------------
 #GENERATE OUTPUTS
-
-
-
 plot1 <- spplot(test,"LN_FC2")
 png("lnFC.png")
 print(plot1)
@@ -166,9 +156,9 @@ dev.off()
 png("nb_m.png")
 plot(test5_nb, coords, col="black", points=TRUE, add=FALSE, arrows=FALSE,length=0.1, xlim=NULL, ylim=NULL)
 dev.off()
-
+#------
 out1 <- print(names(test))
-
+#------
 cat("SUMMARY OF ATTRIBUTES", capture.output(summary(test)), file="Results_format.doc", sep="\n", append=TRUE)
 cat("SUMMARY OF NEIGHBOR MATRIX", capture.output(summary(test5_nb)), file="Results_format.doc", sep="\n", append=TRUE)
 cat("(1)SUMMARY OF OLS", capture.output(summary(reg1)), file="Results_format.doc", sep="\n", append=TRUE)
@@ -203,6 +193,7 @@ cat("(b)EQ5 Pseudo R^2", capture.output(1-(reg5$SSE/(var(test$LN_FC2)*(length(te
 cat("(b)EQ6 Pseudo R^2", capture.output(1-(reg6$SSE/(var(test$LN_FC2)*(length(test$LN_FC2)-1)))), file="Results_format.doc", sep="\n", append=TRUE)
 cat("(b)EQ7 Pseudo R^2", capture.output(1-(reg7$SSE/(var(test$LN_FC2)*(length(test$LN_FC2)-1)))), file="Results_format.doc", sep="\n", append=TRUE)
 cat("(b)EQ8 Pseudo R^2", capture.output(1-(reg8$SSE/(var(test$LN_FC2)*(length(test$LN_FC2)-1)))), file="Results_format.doc", sep="\n", append=TRUE)
+#------
 my_doc <- read_docx()
 my_doc <- my_doc %>% 
   body_add_par("RESULTS FOR: ALL COUNTRIES - MACROLEVEL", style = "heading 1") %>% 
@@ -275,7 +266,3 @@ my_doc <- my_doc %>%
   body_add_par("Advanced MODEL SELECTION IF GLOBAL", style = "heading 2") %>%
   body_add_par("", style = "Normal") %>% # blank paragraph
   print(my_doc, target = "ALL_MACRO.docx")
-
-
-
-
