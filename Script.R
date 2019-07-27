@@ -1,4 +1,4 @@
-#Spatial Filtering and Regressions by Ruben Ferrer 15.03.2019
+#Spatial Econometrics and Regressions by Ruben Ferrer 15.03.2019 adapted from burkeyacademy.com
 #------
 #1) Read the files - Define Inputs
 library(rgdal)
